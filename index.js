@@ -1,0 +1,150 @@
+const { Client, Intents, IntentsBitField } = require('discord.js');
+const axios = require('axios');
+
+const client = new Client({
+	intents: [
+		IntentsBitField.Flags.Guilds,
+		IntentsBitField.Flags.GuildMembers,
+		IntentsBitField.Flags.GuildMessages,
+		IntentsBitField.Flags.MessageContent,
+	],
+});
+
+// Rate limiting variables
+let lastRequestTime = 0;
+const MIN_TIME_BETWEEN_REQUESTS = 5000;
+const requestMadeForMessage = new Set();
+const apiKey = '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';
+const apiEndpoint = 'https://api.openai.com/v1/chat/completions';
+
+client.on('ready', () => {
+	console.log('I am ready!');
+	// axios.post(
+	// 	apiEndpoint,
+	// 	{
+	// 		// prompt: 'Hi',
+	// 		model: 'gpt-3.5-turbo',
+	// 		max_tokens: 10,
+	// 		temperature: 0,
+
+	// 		messages: [
+	// 			{
+	// 				role: 'user',
+	// 				content: 'hi',
+	// 			},
+	// 		],
+	// 	},
+	// 	{
+	// 		headers: {
+	// 			// 'Content-Type': 'application/json',
+	// 			'Authorization': `Bearer ${apiKey}`,
+	// 		},
+	// 	}
+	// ).then((response)=>{
+	// 	let chatGptResponse = response.data.choices[0].message.content;
+	// 	message.channel.send(chatGptResponse);
+	// 	// console.log(response.data.choices[0].message.content);
+	// })
+
+
+});
+
+client.on('messageCreate', async (message) => {
+	if (message.author.bot) {
+		return;
+	}
+
+	// Replace 'YOUR_CHATGPT_API_KEY' with your actual ChatGPT API key
+	
+
+	try {
+		if (message.content.startsWith('!pare') && !requestMadeForMessage.has(message.id)) {
+			// Set the flag to indicate that a request has been made for this message
+			requestMadeForMessage.add(message.id);
+
+			// Check if enough time has passed since the last request
+			const now = Date.now();
+			const timeSinceLastRequest = now - lastRequestTime;
+			if (timeSinceLastRequest < MIN_TIME_BETWEEN_REQUESTS) {
+				await sleep(MIN_TIME_BETWEEN_REQUESTS - timeSinceLastRequest);
+			}
+
+			// Extract the message content, excluding the "!pare" command
+			const userInput = message.content.slice('!pare'.length).trim();
+
+			// Make the API request to ChatGPT
+			// const response = await axios.post(
+			// 	apiEndpoint,
+			// 	{
+			// 		prompt: userInput,
+			// 		model: 'text-davinci-003',
+			// 		max_tokens: 10,
+			// 		temperature: 0,
+
+			// 		// messages: [
+			// 		// 	{
+			// 		// 		role: 'user',
+			// 		// 		content: userInput,
+			// 		// 	},
+			// 		// ],
+			// 	},
+			// 	{
+			// 		headers: {
+			// 			// 'Content-Type': 'application/json',
+			// 			'Authorization': `Bearer ${apiKey}`,
+			// 		},
+			// 	}
+			// );
+			axios.post(
+				apiEndpoint,
+				{
+					// prompt: 'Hi',
+					model: 'gpt-3.5-turbo',
+					temperature: 0,
+		
+					messages: [
+						{
+							role: 'user',
+							content: userInput,
+						},
+					],
+				},
+				{
+					headers: {
+						// 'Content-Type': 'application/json',
+						'Authorization': `Bearer ${apiKey}`,
+					},
+				}
+			).then((response)=>{
+				let chatGptResponse = response.data.choices[0].message.content.trim();
+				message.channel.send('```'+chatGptResponse+'```');
+			})
+
+			// Update the last request time
+			lastRequestTime = now;
+
+			// Extract and send the generated response from ChatGPT
+			// const chatGptResponse = response.data.choices[0]?.text.trim();
+			// message.channel.send(chatGptResponse);
+		}
+	} catch (error) {
+		console.error('Error:', error.message);
+	} finally {
+		// Always remove the flag after processing the message
+		requestMadeForMessage.delete(message.id);
+	}
+});
+
+// client.login('YOUR_DISCORD_BOT_TOKEN');
+// Helper function for sleep/delay
+function sleep(ms) {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+client.login(
+	"MTEzMjM0NzQ4NTEzMDU5MjI5Nw.Gi4a_d.28C8JRJzc1jdWTxNsPaahob1xuW7a_9m2Aw-V4"
+);
+
+
+
+
